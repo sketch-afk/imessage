@@ -1,5 +1,5 @@
 import express from "express";
-import User from "./models/user.model.js";
+import User from "../models/user.model.js";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 
 const router = express.Router();
@@ -41,13 +41,13 @@ router.post("/", async (req, res) => {
       );
     }
 
-    if (evt.tyoe === "user.deleted") {
+    if (evt.type === "user.deleted") {
       if (evt.data.id) await User.findOneAndDelete({ clerkId: evt.data.id });
     }
 
     res.status(200).json({ received: true });
   } catch (e) {
-    console.error("Error in Clerk webhook:", error);
+    console.error("Error in Clerk webhook:", e);
     res.status(400).json({ message: "Webhook verification failed" });
   }
 });
