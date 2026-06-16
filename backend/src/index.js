@@ -7,7 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import job from './lib/cron.js';
 import clerkwebhook from './webhooks/clerk.webhook.js'
-import authRoutes from './routes/auth.route.js'
+import authRoutes from './routes/auth.route.js';
+import messageRoutes from './routes/message.route.js';
 
 
 import { clerkMiddleware } from '@clerk/express'
@@ -32,7 +33,8 @@ app.get("/health", (req, res)=>{
   res.status(200).json({ok:true})
 })
 
-app.use("/api/auth",authRoutes)
+app.use("/api/auth",authRoutes);
+app.use("/api/messages", messageRoutes);
 
 // if the public directory exist, serve the static files
 // this is for the production build
