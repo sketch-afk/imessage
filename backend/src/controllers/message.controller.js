@@ -1,114 +1,132 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import { hasImageKitConfig, uploadChatMedia } from "../lib/imagekit.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
 
-export async function getUsersForSidebar(req, res){
-    try {
-        const loggedInUserId = req.user._id;
+export async function getUsersForSidebar(req, res) {
+  try {
+    const loggedInUserId = req.user._id;
 
-        const filteredUsers = await User.find({_id: {$ne: loggedInUserId } }).select("-clerkId");
+    const filteredUsers = await User.find({
+      _id: { $ne: loggedInUserId },
+    }).select("-clerkId");
 
-        res.status(200).json(filteredUsers);
-
-    } catch (error) {
-        console.error("Error in getUsersForSidebar:", error.message);
-        res.status(500).json({ message: "Internal Server Error" });
-    
-    }
+    res.status(200).json(filteredUsers);
+  } catch (error) {
+    console.error("Error in getUsersForSidebar:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 }
 
-export async function getConversationsForSidebar(req, res){
-    try {
-        const loggedInUserId = req.user._id;
+export async function getConversationsForSidebar(req, res) {
+  try {
+    const loggedInUserId = req.user._id;
 
-        const conversations = await Message.aggregate([
-            { $match: { $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }]} },
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }],
+        },
+      },
 
-            { $group: {
-                _id: { $cond: [{ $eq: ["$sender", loggedInUserId] }, "$receiverId", "$senderId"] },
-                lastMessage: { $last: "$$ROOT" }},
-            },
-
-            { $sort: { lastMessage: -1 } },
-
-            { $lookup: {
-                from: "users",
-                localField: "_id",
-                foreignField: "_id",
-                as: "user",
-            }},
-
-            { $replaceRoot: { newRoot: { $first: "$user" } }},
-
-            { $project: { clerkId: 0 } },
-        ])
-
-        res.status(200).json(conversations);
-    } catch (error) {
-        console.error("Error in getConversationsForSidebar:", error.message);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
-}
-
-export async function getMessages(req, res){
-    try {
-        const { id: userToChatId } = req.params;
-        const myId = req.user._id;
-
-        const messages = await Message.find({
-            $or: [
-                { sender: myId, receiver: userToChatId },
-                { sender: userToChatId, receiver: myId },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $eq: ["$sender", loggedInUserId] },
+              "$receiverId",
+              "$senderId",
             ],
-        }).sort({ createdAt: 1 });
+          },
+          lastMessage: { $last: "$$ROOT" },
+        },
+      },
 
-        res.status(200).json(messages);
-    } catch (e) {
-        console.error("Error in getMessages:", e.message);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
+      { $sort: { lastMessage: -1 } },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+
+      { $replaceRoot: { newRoot: { $first: "$user" } } },
+
+      { $project: { clerkId: 0 } },
+    ]);
+
+    res.status(200).json(conversations);
+  } catch (error) {
+    console.error("Error in getConversationsForSidebar:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 }
 
-export async function sendMessage(req, res){
-    try {
-        const { text } = req.body;
-        const { id: receiverId } = req.params;
-        const senderId = req.user._id;
+export async function getMessages(req, res) {
+  try {
+    const { id: userToChatId } = req.params;
+    const myId = req.user._id;
 
-        let imageUrl;
-        let videoUrl;
+    const messages = await Message.find({
+      $or: [
+        { sender: myId, receiver: userToChatId },
+        { sender: userToChatId, receiver: myId },
+      ],
+    }).sort({ createdAt: 1 });
 
-        if(req.file){
-            if(!hasImageKitConfig()){
-                return res.status(500).json({message: "Media upload is not configured"})
-            }
+    res.status(200).json(messages);
+  } catch (e) {
+    console.error("Error in getMessages:", e.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
 
-            const url = await uploadChatMedia(req.file);
-            if(req.file.mimetype.startsWith("video/")){
-                videoUrl = url;
-            }
-            else {    
-                imageUrl = url;
-            }
-        }
+export async function sendMessage(req, res) {
+  try {
+    const { text } = req.body;
+    const { id: receiverId } = req.params;
+    const senderId = req.user._id;
 
-        const newMessage = new Message({
-            senderId,
-            receiverId,
-            text,
-            image: imageUrl,
-            video:videoUrl,
-        });
+    let imageUrl;
+    let videoUrl;
 
-        await newMessage.save();
+    if (req.file) {
+      if (!hasImageKitConfig()) {
+        return res
+          .status(500)
+          .json({ message: "Media upload is not configured" });
+      }
 
-
-
-
-        res.status(201).json(newMessage);
-
-    } catch (e) {
-        console.error("Error in sendMessage:", e.message);
-        res.status(500).json({ message: "Internal Server Error" });
+      const url = await uploadChatMedia(req.file);
+      if (req.file.mimetype.startsWith("video/")) {
+        videoUrl = url;
+      } else {
+        imageUrl = url;
+      }
     }
+
+    const newMessage = new Message({
+      senderId,
+      receiverId,
+      text,
+      image: imageUrl,
+      video: videoUrl,
+    });
+
+    await newMessage.save();
+
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    // only send the message in realtime if user is online
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+
+    res.status(201).json(newMessage);
+  } catch (e) {
+    console.error("Error in sendMessage:", e.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 }
