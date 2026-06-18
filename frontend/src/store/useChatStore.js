@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware"; 
+import { persist } from "zustand/middleware";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
-import toast from "react-hot-toast";
+import toast  from "react-hot-toast";
 
-
-export const useChatStore = create(persist(
+export const useChatStore = create(
+  persist(
     (set, get) => ({
       users: [],
       conversations: [],
@@ -16,7 +16,7 @@ export const useChatStore = create(persist(
       isMessagesLoading: false,
       activeConversationId: null,
       searchQuery: "",
-      sedebarTab: "chats",
+      sidebarTab: "chats",
       composerText: "",
       isSoundEnabled: true,
       isSendingMedia: false,
@@ -47,6 +47,7 @@ export const useChatStore = create(persist(
           set({ conversations: res.data });
         } catch (error) {
           console.log("Error in getConversations", error.message);
+
         } finally {
           set({ isConversationsLoading: false });
         }
@@ -152,7 +153,18 @@ export const useChatStore = create(persist(
     }),
     {
       name: "imessage-storage",
-      partialize: (state) => ({ isSoundEnabled: state.isSoundEnabled }),
+      partialize: (state) => ({
+        isSoundEnabled: state.isSoundEnabled,
+        activeConversationId: state.activeConversationId,
+        sidebarTab: state.sidebarTab,
+        selectedUser: state.selectedUser,
+        users: state.users,
+        conversations: state.conversations,
+        messages: state.messages,
+      }),
+      onRehydrateStorage: () => (state, action) => {
+        console.log("Chat store rehydrated:", action, state);
+      },
     },
   ),
 );

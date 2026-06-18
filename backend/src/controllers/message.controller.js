@@ -25,7 +25,7 @@ export async function getConversationsForSidebar(req, res) {
     const conversations = await Message.aggregate([
       {
         $match: {
-          $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }],
+          $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
         },
       },
 
@@ -33,7 +33,7 @@ export async function getConversationsForSidebar(req, res) {
         $group: {
           _id: {
             $cond: [
-              { $eq: ["$sender", loggedInUserId] },
+              { $eq: ["$senderId", loggedInUserId] },
               "$receiverId",
               "$senderId",
             ],
@@ -72,8 +72,8 @@ export async function getMessages(req, res) {
 
     const messages = await Message.find({
       $or: [
-        { sender: myId, receiver: userToChatId },
-        { sender: userToChatId, receiver: myId },
+        { senderId: myId, receiverId: userToChatId },
+        { senderId: userToChatId, receiverId: myId },
       ],
     }).sort({ createdAt: 1 });
 

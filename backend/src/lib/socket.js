@@ -21,11 +21,11 @@ io.on('connection', (socket) => {
     
     if(userId) userSocketMap[userId] = socket.id;
 
-    io.emit('getOnlineUser', Object.keys(userSocketMap));
+    io.emit('getOnlineUsers', Object.keys(userSocketMap));
 
     socket.on('disconnect', () => {
         delete userSocketMap[userId];
-        io.emit('getOnlineUser', Object.keys(userSocketMap));
+        io.emit('getOnlineUsers', Object.keys(userSocketMap));
     });
 });
 
