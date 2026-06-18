@@ -4,10 +4,14 @@ import { MessageBubble } from "./MessageBubble";
 import { NoConversationPlaceholder } from "./NoConversationPlaceholder";
 
 export function MessageList() {
-  const { activeConversation, activeConversationId } = useSelectedConversation();
+  const { activeConversation, activeConversationId } =
+    useSelectedConversation();
 
   const lastMessageId = activeConversation?.messages.at(-1)?.id;
-  const messagesScrollRef = useScrollToBottom(activeConversationId, lastMessageId);
+  const messagesScrollRef = useScrollToBottom(
+    activeConversationId,
+    lastMessageId,
+  );
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden">
