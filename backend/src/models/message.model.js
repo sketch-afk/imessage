@@ -20,7 +20,22 @@ const messageSchema = new mongoose.Schema({
     video: {
         type: String,
     },
+    isEdited: {
+        type: Boolean,
+        default: false,
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    status: {
+        type: String,
+        enum: ["sent", "delivered", "seen"],
+        default: "sent",
+    },
 },{timestamps:true},)
+
+messageSchema.index({ receiverId: 1, status: 1 });
 
 const Message = mongoose.model("Message",messageSchema)
 

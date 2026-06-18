@@ -12,10 +12,7 @@ function useScrollToBottom(threadKey, lastItemId) {
     const el = scrollRef.current;
     if (!el) return;
     const scrollToBottom = () => {
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: "smooth", 
-      });
+      el.scrollTop = el.scrollHeight;
     };
     scrollToBottom();
     requestAnimationFrame(scrollToBottom);
