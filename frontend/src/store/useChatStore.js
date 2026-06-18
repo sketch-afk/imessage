@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
-import toast  from "react-hot-toast";
+import toast from "react-hot-toast";
 
 export const useChatStore = create(
   persist(
@@ -47,7 +47,6 @@ export const useChatStore = create(
           set({ conversations: res.data });
         } catch (error) {
           console.log("Error in getConversations", error.message);
-
         } finally {
           set({ isConversationsLoading: false });
         }
@@ -59,6 +58,9 @@ export const useChatStore = create(
         try {
           const res = await axiosInstance.get(`/messages/${userId}`);
           set({ messages: res.data });
+          
+          // Automatically mark fetched messages as seen
+          get().markMessagesAsSeen(userId);
         } catch (error) {
           toast.error(
             error.response?.data?.message || "Failed to load messages",
@@ -88,6 +90,61 @@ export const useChatStore = create(
         }
       },
 
+      editMessage: async (messageId, text) => {
+        try {
+          const res = await axiosInstance.put(`/messages/edit/${messageId}`, {
+            text,
+          });
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg._id === messageId ? res.data : msg,
+            ),
+          }));
+          get().getConversations();
+          return true;
+        } catch (error) {
+          toast.error(
+            error.response?.data?.message || "Failed to edit message",
+          );
+          return false;
+        }
+      },
+
+      deleteMessage: async (messageId) => {
+        try {
+          const res = await axiosInstance.delete(
+            `/messages/delete/${messageId}`,
+          );
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg._id === messageId ? res.data : msg,
+            ),
+          }));
+          get().getConversations();
+          return true;
+        } catch (error) {
+          toast.error(
+            error.response?.data?.message || "Failed to delete message",
+          );
+          return false;
+        }
+      },
+
+      markMessagesAsSeen: async (conversationId) => {
+        try {
+          await axiosInstance.put(`/messages/mark-seen/${conversationId}`);
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.senderId === conversationId && msg.status !== "seen"
+                ? { ...msg, status: "seen" }
+                : msg
+            ),
+          }));
+        } catch (error) {
+          console.log("Failed to mark messages as seen", error.message);
+        }
+      },
+
       subscribeToMessages: (userId) => {
         if (!userId) return;
 
@@ -96,18 +153,68 @@ export const useChatStore = create(
 
         socket.off("newMessage");
         socket.on("newMessage", (newMessage) => {
+          // Always update the sidebar conversations list to show the new message preview
+          get().getConversations();
+
           // if im not the receiver don't do anything just return
           if (String(newMessage.senderId) !== String(userId)) return;
 
           set({ messages: [...get().messages, newMessage] });
+          
+          // Automatically mark the new message as seen since we are looking at the chat
+          get().markMessagesAsSeen(userId);
+        });
 
+        socket.on("messageEdited", (updatedMessage) => {
           get().getConversations();
+
+          if (String(updatedMessage.senderId) !== String(userId)) return;
+
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg._id === updatedMessage._id ? updatedMessage : msg,
+            ),
+          }));
+        });
+
+        socket.on("messageDeleted", (deletedMessage) => {
+          get().getConversations();
+
+          if (String(deletedMessage.senderId) !== String(userId)) return;
+
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg._id === deletedMessage._id ? deletedMessage : msg,
+            ),
+          }));
+        });
+
+        socket.on("messagesDelivered", ({ receiverId }) => {
+          if (String(receiverId) !== String(userId)) return;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.status === "sent" ? { ...msg, status: "delivered" } : msg
+            ),
+          }));
+        });
+
+        socket.on("messagesSeen", ({ receiverId }) => {
+          if (String(receiverId) !== String(userId)) return;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.status !== "seen" ? { ...msg, status: "seen" } : msg
+            ),
+          }));
         });
       },
 
       unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
         socket?.off("newMessage");
+        socket?.off("messageEdited");
+        socket?.off("messageDeleted");
+        socket?.off("messagesDelivered");
+        socket?.off("messagesSeen");
       },
 
       setSelectedUser: (selectedUser) => set({ selectedUser }),
@@ -155,12 +262,12 @@ export const useChatStore = create(
       name: "imessage-storage",
       partialize: (state) => ({
         isSoundEnabled: state.isSoundEnabled,
-        activeConversationId: state.activeConversationId,
-        sidebarTab: state.sidebarTab,
-        selectedUser: state.selectedUser,
-        users: state.users,
-        conversations: state.conversations,
-        messages: state.messages,
+        // activeConversationId: state.activeConversationId,
+        // sidebarTab: state.sidebarTab,
+        // selectedUser: state.selectedUser,
+        // users: state.users,
+        // conversations: state.conversations,
+        // messages: state.messages,
       }),
       onRehydrateStorage: () => (state, action) => {
         console.log("Chat store rehydrated:", action, state);
