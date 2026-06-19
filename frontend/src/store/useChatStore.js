@@ -145,6 +145,31 @@ export const useChatStore = create(
         }
       },
 
+      subscribeToGlobalEvents: () => {
+        const socket = useAuthStore.getState().socket;
+        const currentUserId = useAuthStore.getState().authUser?._id;
+        if (!socket || !currentUserId) return;
+
+        socket.off("newUser");
+        socket.on("newUser", (newUser) => {
+          console.log("RECEIVED NEW USER VIA SOCKET:", newUser);
+          if (String(newUser._id) === String(currentUserId)) return;
+          
+          set((state) => {
+            const exists = state.users.some((u) => u._id === newUser._id);
+            if (exists) {
+              return { users: state.users.map((u) => u._id === newUser._id ? newUser : u) };
+            }
+            return { users: [...state.users, newUser] };
+          });
+        });
+      },
+
+      unsubscribeFromGlobalEvents: () => {
+        const socket = useAuthStore.getState().socket;
+        socket?.off("newUser");
+      },
+
       subscribeToMessages: (userId) => {
         if (!userId) return;
 
@@ -152,6 +177,7 @@ export const useChatStore = create(
         if (!socket) return;
 
         socket.off("newMessage");
+
         socket.on("newMessage", (newMessage) => {
           // Always update the sidebar conversations list to show the new message preview
           get().getConversations();

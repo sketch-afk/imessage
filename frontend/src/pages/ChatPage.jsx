@@ -15,6 +15,8 @@ const ChatPage = () => {
   const getConversations = useChatStore((state) => state.getConversations);
   const getMessages = useChatStore((state) => state.getMessages);
   const getUsers = useChatStore((state) => state.getUsers);
+  const subscribeToGlobalEvents = useChatStore((state) => state.subscribeToGlobalEvents);
+  const unsubscribeFromGlobalEvents = useChatStore((state) => state.unsubscribeFromGlobalEvents);
   const subscribeToMessages = useChatStore((state) => state.subscribeToMessages);
   const unsubscribeFromMessages = useChatStore((state) => state.unsubscribeFromMessages);
 
@@ -23,7 +25,10 @@ const ChatPage = () => {
   useEffect(() => {
     getUsers();
     getConversations();
-  }, [getConversations, getUsers]);
+    subscribeToGlobalEvents();
+
+    return () => unsubscribeFromGlobalEvents();
+  }, [getConversations, getUsers, subscribeToGlobalEvents, unsubscribeFromGlobalEvents]);
 
   useEffect(() => {
     if (!activeConversationId) return;
