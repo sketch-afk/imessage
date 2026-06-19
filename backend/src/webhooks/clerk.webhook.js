@@ -1,6 +1,7 @@
 import express from "express";
 import User from "../models/user.model.js";
 import { verifyWebhook } from "@clerk/backend/webhooks";
+import { io } from "../lib/socket.js";
 
 const router = express.Router();
 
@@ -34,11 +35,22 @@ router.post("/", async (req, res) => {
         u.username ||
         email?.split("@")[0];
 
-      await User.findOneAndUpdate(
+      const userDoc = await User.findOneAndUpdate(
         { clerkId: u.id },
         { clerkId: u.id, email, fullName, profilePic: u.image_url },
         { new: true, upsert: true, setDefaultsOnInsert: true },
       );
+
+      if (evt.type === "user.created" || evt.type === "user.updated") {
+        const sanitizedUser = {
+          _id: userDoc._id,
+          fullName: userDoc.fullName,
+          profilePic: userDoc.profilePic,
+          email: userDoc.email
+        };
+        console.log("Emitting newUser socket event for type:", evt.type, sanitizedUser);
+        io.emit("newUser", sanitizedUser);
+      }
     }
 
     if (evt.type === "user.deleted") {

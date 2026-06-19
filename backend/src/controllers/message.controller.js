@@ -150,6 +150,8 @@ export async function getConversationsForSidebar(req, res) {
         },
       },
 
+      { $match: { "user.0": { $exists: true } } },
+
       { $replaceRoot: { newRoot: { $first: "$user" } } },
 
       { $project: { clerkId: 0 } },
