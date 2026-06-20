@@ -1,4 +1,4 @@
-# iMessage Clone
+# 💬 Full Stack Real-Time Chat App 🚀
 
 A full-stack, real-time messaging application inspired by iMessage. Built with modern web technologies, featuring instant messaging, secure authentication, and image sharing.
 
@@ -38,63 +38,33 @@ A full-stack, real-time messaging application inspired by iMessage. Built with m
 - Clerk account for authentication (Publishable and Secret keys)
 - ImageKit account for media storage
 
-### Installation
+## 🧪 Environment Variables
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd imessage
-   ```
+### Backend (`/backend`)
 
-2. **Setup Backend**
-   ```bash
-   cd backend
-   npm install
-   ```
-   Create a `.env` file in the `backend` directory with the following variables:
-   ```env
-   PORT=5000
-   MONGO_URI=your_mongodb_connection_string
-   CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-   CLERK_SECRET_KEY=your_clerk_secret_key
-   CLERK_WEBHOOK_SECRET=your_clerk_webhook_secret
-   IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
-   IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
-   IMAGEKIT_URL_ENDPOINT=your_imagekit_url_endpoint
-   ```
-   Start the backend server:
-   ```bash
-   npm run dev
-   ```
+```bash
+PORT=<your_port>
 
-3. **Setup Frontend**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-   Create a `.env` file in the `frontend` directory with the following variables:
-   ```env
-   VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-   VITE_API_URL=http://localhost:5000
-   ```
-   Start the frontend development server:
-   ```bash
-   npm run dev
-   ```
+NODE_ENV=<development_or_production>
 
-## 📜 Scripts
+MONGO_URI=<your_mongodb_connection_string>
 
-### Backend
-- `npm run dev`: Starts the backend server using nodemon.
-- `npm run start`: Starts the backend server in production mode.
-- `npm run db:seed`: Seeds the database with initial user data.
-- `npm run db:unseed`: Clears seeded data from the database.
+CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
+CLERK_SECRET_KEY=<your_clerk_secret_key>
+CLERK_WEBHOOK_SIGNING_SECRET=<your_clerk_webhook_signing_secret>
 
-### Frontend
-- `npm run dev`: Starts the Vite development server.
-- `npm run build`: Builds the app for production.
-- `npm run preview`: Previews the production build locally.
-- `npm run lint`: Runs ESLint to check for code issues.
+IMAGEKIT_PRIVATE_KEY=<your_imagekit_private_key>
+
+FRONTEND_URL=<your_frontend_url>
+```
+
+### Frontend (`/frontend`)
+
+```bash
+VITE_CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
+```
+
+---
 
 ## 📝 License
 This project is licensed under the ISC License.
